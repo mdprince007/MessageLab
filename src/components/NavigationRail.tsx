@@ -2,10 +2,16 @@ import React, { useState } from 'react';
 import { CURRENT_USER } from '../data/mockData';
 
 interface NavigationRailProps {
+  workbenchMode?: 'single' | 'dual';
+  onToggleWorkbenchMode?: () => void;
   onResetData: () => void;
 }
 
-export default function NavigationRail({ onResetData }: NavigationRailProps) {
+export default function NavigationRail({
+  workbenchMode,
+  onToggleWorkbenchMode,
+  onResetData,
+}: NavigationRailProps) {
   const [activeTab, setActiveTab] = useState<'chats' | 'people' | 'marketplace' | 'requests' | 'archive'>('chats');
   const [showSettingsMenu, setShowSettingsMenu] = useState(false);
 
@@ -13,17 +19,43 @@ export default function NavigationRail({ onResetData }: NavigationRailProps) {
     <aside className="hidden md:flex w-16 flex-col items-center justify-between border-r border-slate-900 bg-[#121212] py-3 shadow-2xs">
       {/* Top Icons */}
       <div className="flex flex-col items-center gap-3 w-full">
-        {/* Messenger Logo with Iconic Gradient */}
+        {/* MessageLab Independent Product Logo */}
         <div
-          className="flex h-10 w-10 items-center justify-center rounded-2xl bg-gradient-to-tr from-[#0064E0] via-[#0084FF] to-[#00C6FF] text-white shadow-md shadow-blue-500/25 cursor-pointer hover:scale-105 transition"
-          title="Messenger"
+          className="group relative flex h-10 w-10 items-center justify-center rounded-2xl bg-gradient-to-tr from-[#0064E0] via-[#0084FF] to-[#00C6FF] text-white shadow-md shadow-blue-500/25 cursor-pointer hover:scale-105 transition"
+          title="MessageLab — Build → Improve → Share"
         >
-          <svg className="h-6 w-6" viewBox="0 0 28 28" fill="currentColor">
-            <path d="M14 2C7.373 2 2 6.96 2 13.08c0 3.48 1.74 6.58 4.46 8.58-.2 1.34-1.04 3.76-1.12 3.98-.1.26.06.56.32.6.14.02.26-.02.38-.1.98-.68 3.52-2.42 4.14-2.86.58.14 1.18.22 1.82.22 6.627 0 12-4.96 12-11.08C24 6.96 18.627 2 14 2zm1.24 14.86l-2.92-3.12-5.7 3.12 6.28-6.66 2.98 3.12 5.64-3.12-6.28 6.66z" />
+          <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round">
+            <path d="M10 2v7.31L4.2 18.5A2 2 0 0 0 5.8 22h12.4a2 2 0 0 0 1.6-3.5L14 9.31V2" />
+            <path d="M8.5 2h7" />
+            <path d="M14 9.3a6.5 6.5 0 1 1-4 0" />
           </svg>
         </div>
 
         <div className="w-8 h-[1px] bg-slate-800 my-1" />
+
+        {/* Workbench Split-Screen Switcher Button */}
+        {onToggleWorkbenchMode && (
+          <button
+            type="button"
+            onClick={onToggleWorkbenchMode}
+            className={`relative flex h-11 w-11 items-center justify-center rounded-xl transition ${
+              workbenchMode === 'dual'
+                ? 'bg-amber-950 text-amber-400 border border-amber-600/40'
+                : 'text-slate-400 hover:bg-slate-800 hover:text-white'
+            }`}
+            title={workbenchMode === 'dual' ? 'Dual Split-Screen Workbench Active' : 'Switch to Dual Split-Screen Workbench'}
+          >
+            <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2" />
+            </svg>
+            {workbenchMode === 'dual' && (
+              <span className="absolute -top-1 -right-1 flex h-2.5 w-2.5">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-amber-500"></span>
+              </span>
+            )}
+          </button>
+        )}
 
         {/* Chats Tab */}
         <button
