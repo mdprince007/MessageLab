@@ -12,6 +12,7 @@ export interface SendMessageOptions {
   isLocked?: boolean;
   unlockAt?: string;
   showTimerToReceiver?: boolean;
+  senderId?: string;
 }
 
 export function useMessenger() {
@@ -77,6 +78,7 @@ export function useMessenger() {
       const isLocked = options?.isLocked ?? false;
       const unlockAt = options?.unlockAt;
       const showTimerToReceiver = options?.showTimerToReceiver ?? true;
+      const actualSenderId = options?.senderId || 'me';
 
       const trimmed = text.trim();
       if (!trimmed && !isThumbsUp && !isSticker) return;
@@ -92,10 +94,10 @@ export function useMessenger() {
       const newMsg: Message = {
         id: newMsgId,
         conversationId: activeId,
-        senderId: 'me',
+        senderId: actualSenderId,
         text: messageContent,
         timestamp: timeStr,
-        status: 'sending',
+        status: actualSenderId === 'me' ? 'sending' : 'delivered',
         reactions: [],
         isThumbsUp,
         isSticker,
@@ -119,86 +121,89 @@ export function useMessenger() {
         })
       );
 
-      // Simulate delivery after 400ms
-      setTimeout(() => {
-        setConversations((prev) =>
-          prev.map((c) => {
-            if (c.id === activeId) {
-              return {
-                ...c,
-                messages: c.messages.map((m) =>
-                  m.id === newMsgId ? { ...m, status: 'delivered' } : m
-                ),
-              };
-            }
-            return c;
-          })
-        );
-      }, 400);
+      // Only simulate delivery and automated reply if sent by 'me'
+      if (actualSenderId === 'me') {
+        // Simulate delivery after 400ms
+        setTimeout(() => {
+          setConversations((prev) =>
+            prev.map((c) => {
+              if (c.id === activeId) {
+                return {
+                  ...c,
+                  messages: c.messages.map((m) =>
+                    m.id === newMsgId ? { ...m, status: 'delivered' } : m
+                  ),
+                };
+              }
+              return c;
+            })
+          );
+        }, 400);
 
-      // Simulate seen after 900ms (unless locked)
-      setTimeout(() => {
-        setConversations((prev) =>
-          prev.map((c) => {
-            if (c.id === activeId) {
-              return {
-                ...c,
-                messages: c.messages.map((m) =>
-                  m.id === newMsgId ? { ...m, status: 'seen' } : m
-                ),
-              };
-            }
-            return c;
-          })
-        );
-      }, 900);
+        // Simulate seen after 900ms (unless locked)
+        setTimeout(() => {
+          setConversations((prev) =>
+            prev.map((c) => {
+              if (c.id === activeId) {
+                return {
+                  ...c,
+                  messages: c.messages.map((m) =>
+                    m.id === newMsgId ? { ...m, status: 'seen' } : m
+                  ),
+                };
+              }
+              return c;
+            })
+          );
+        }, 900);
 
-      // If it's a locked message, simulate a surprised acknowledgment reply from recipient!
-      setTimeout(() => {
-        setIsTyping(true);
-      }, 1500);
+        // If it's a locked message, simulate a surprised acknowledgment reply from recipient!
+        setTimeout(() => {
+          setIsTyping(true);
+        }, 1500);
 
-      setTimeout(() => {
-        setIsTyping(false);
-        const normalReplies = [
-          'Sounds great! Glad to hear that 😊',
-          'Haha, totally agree with you! 🙌',
-          'Awesome! Thanks for sharing.',
-          'Super cool! Let me check and get back to you.',
-          'Love it! Talk soon ✨',
-        ];
-        const lockedReplies = [
-          'Wait, you sent a time-locked message! 🔒 Looking forward to opening it!',
-          'Ooh, a locked surprise? I can see the timer! ⏱️',
-          'I see a secret message! Can’t wait until it unlocks!',
-        ];
+        setTimeout(() => {
+          setIsTyping(false);
+          const normalReplies = [
+            'Sounds great! Glad to hear that 😊',
+            'Haha, totally agree with you! 🙌',
+            'Awesome! Thanks for sharing.',
+            'Super cool! Let me check and get back to you.',
+            'Love it! Talk soon ✨',
+          ];
+          const lockedReplies = [
+            'Wait, you sent a time-locked message! 🔒 Looking forward to opening it!',
+            'Ooh, a locked surprise? I can see the timer! ⏱️',
+            'I see a secret message! Can’t wait until it unlocks!',
+          ];
 
-        const replyPool = isLocked ? lockedReplies : normalReplies;
-        const randomReply = replyPool[Math.floor(Math.random() * replyPool.length)];
-        const replyTime = new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+          const replyPool = isLocked ? lockedReplies : normalReplies;
+          const randomReply = replyPool[Math.floor(Math.random() * replyPool.length)];
+          const replyTime = new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
 
-        const replyMsg: Message = {
-          id: `reply-${Date.now()}`,
-          conversationId: activeId,
-          senderId: activeConversation.participant.id,
-          text: randomReply,
-          timestamp: replyTime,
-          status: 'delivered',
-          reactions: [],
-        };
+          const replyMsg: Message = {
+            id: `reply-${Date.now()}`,
+            conversationId: activeId,
+            senderId: activeConversation.participant.id,
+            text: randomReply,
+            timestamp: replyTime,
+            status: 'delivered',
+            reactions: [],
+          };
 
-        setConversations((prev) =>
-          prev.map((c) => {
-            if (c.id === activeId) {
-              return {
-                ...c,
-                messages: [...c.messages, replyMsg],
-              };
-            }
-            return c;
-          })
-        );
-      }, 3500);
+          setConversations((prev) =>
+            prev.map((c) => {
+              if (c.id === activeId) {
+                return {
+                  ...c,
+                  messages: [...c.messages, replyMsg],
+                };
+              }
+              return c;
+            })
+          );
+        }, 3500);
+      }
     },
     [activeId, activeConversation]
   );

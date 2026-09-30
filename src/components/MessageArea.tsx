@@ -1,5 +1,6 @@
 import React, { useEffect, useRef } from 'react';
 import { Conversation } from '../types/messenger';
+import { CURRENT_USER } from '../data/mockData';
 import MessageBubble from './MessageBubble';
 
 interface MessageAreaProps {
@@ -24,34 +25,52 @@ export default function MessageArea({
   onToggleTimerVisibility,
 }: MessageAreaProps) {
   const { participant, messages, theme } = conversation;
+  const containerRef = useRef<HTMLDivElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
+  const prevLenRef = useRef<number>(messages.length);
+  const prevConvRef = useRef<string>(conversation.id);
 
+  // Smooth scroll for new messages, instant scroll on initial load or conversation change
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages, isTyping]);
+    if (conversation.id !== prevConvRef.current) {
+      prevConvRef.current = conversation.id;
+      prevLenRef.current = messages.length;
+      if (containerRef.current) {
+        containerRef.current.scrollTop = containerRef.current.scrollHeight;
+      }
+    } else if (messages.length > prevLenRef.current || isTyping) {
+      prevLenRef.current = messages.length;
+      bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [messages, isTyping, conversation.id]);
+
+  const displayUser = perspective === 'receiver' ? CURRENT_USER : participant;
 
   return (
-    <div className="flex-1 overflow-y-auto px-4 py-6 space-y-3 bg-[#000000] text-slate-100 scrollbar-thin scrollbar-thumb-slate-800">
+    <div
+      ref={containerRef}
+      className="flex-1 overflow-y-auto px-4 py-6 space-y-3 bg-[#000000] text-slate-100 scrollbar-thin scrollbar-thumb-slate-800"
+    >
       {/* Intro Profile Card at Top of Thread */}
       <div className="flex flex-col items-center justify-center pt-6 pb-8 text-center border-b border-slate-900 mb-6">
         <div className="relative mb-3">
           <img
-            src={participant.avatar}
-            alt={participant.name}
+            src={displayUser.avatar}
+            alt={displayUser.name}
             className="h-20 w-20 rounded-full object-cover shadow-sm ring-4 ring-slate-800"
           />
-          {participant.isOnline && (
+          {displayUser.isOnline && (
             <span
               className="absolute bottom-1 right-1 h-5 w-5 rounded-full border-3 border-black bg-emerald-500"
               title="Active now"
             />
           )}
         </div>
-        <h3 className="text-lg font-bold text-white">{participant.name}</h3>
-        <p className="text-xs text-slate-400 mt-0.5">Messenger • @{participant.username}</p>
-        {participant.bio && (
+        <h3 className="text-lg font-bold text-white">{displayUser.name}</h3>
+        <p className="text-xs text-slate-400 mt-0.5">Messenger • @{displayUser.username}</p>
+        {displayUser.bio && (
           <p className="text-xs text-slate-300 max-w-xs mt-2 italic bg-slate-900 px-3 py-1.5 rounded-full border border-slate-800">
-            {participant.bio}
+            {displayUser.bio}
           </p>
         )}
         <p className="text-[11px] text-slate-500 mt-2">

@@ -73,6 +73,14 @@ export default function MessageComposer({
     setUnlockDateTime(formatLocalDateTime(target));
   };
 
+  const handleTextChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setText(e.target.value);
+    if (textareaRef.current) {
+      textareaRef.current.style.height = 'auto';
+      textareaRef.current.style.height = `${Math.min(textareaRef.current.scrollHeight, 120)}px`;
+    }
+  };
+
   const handleSendNormal = (e?: React.FormEvent) => {
     if (e) e.preventDefault();
     if (!text.trim()) return;
@@ -223,7 +231,7 @@ export default function MessageComposer({
             ref={textareaRef}
             rows={1}
             value={text}
-            onChange={(e) => setText(e.target.value)}
+            onChange={handleTextChange}
             onKeyDown={handleKeyDown}
             placeholder="Message"
             className="w-full resize-none bg-transparent text-sm text-slate-100 placeholder-[#8A8D91] focus:outline-none max-h-24 pr-8"
@@ -308,9 +316,13 @@ export default function MessageComposer({
       {/* AUTHENTIC MESSENGER DRAWER (Matches Image 2 Exactly!) */}
       {showDrawer && (
         <div className="border-t border-slate-900 bg-[#000000] p-4 animate-in slide-in-from-bottom-6 duration-200">
-          {/* Top Drag Handle */}
-          <div className="flex justify-center mb-3">
-            <div className="h-1 w-10 rounded-full bg-slate-700" />
+          {/* Top Drag Handle (Clickable to dismiss drawer) */}
+          <div
+            onClick={() => setShowDrawer(false)}
+            className="flex justify-center mb-3 cursor-pointer py-1 group"
+            title="Click to close drawer"
+          >
+            <div className="h-1.5 w-12 rounded-full bg-slate-700 group-hover:bg-slate-500 transition" />
           </div>
 
           {/* Navigation Category Bar (Matches Image 2) */}

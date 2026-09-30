@@ -1,16 +1,18 @@
 import React from 'react';
 import { Conversation, isMessageCurrentlyLocked } from '../types/messenger';
+import { CURRENT_USER } from '../data/mockData';
 
 interface ChatHeaderProps {
   conversation: Conversation;
   perspective: 'sender' | 'receiver';
   currentTime: Date;
-  onTogglePerspective: () => void;
+  onTogglePerspective?: () => void;
   onUnlockNow?: () => void;
   onBack?: () => void;
   onStartCall: (type: 'audio' | 'video') => void;
   onToggleDetails: () => void;
   isDetailsOpen: boolean;
+  showPerspectiveToggle?: boolean;
 }
 
 export default function ChatHeader({
@@ -23,9 +25,14 @@ export default function ChatHeader({
   onStartCall,
   onToggleDetails,
   isDetailsOpen,
+  showPerspectiveToggle = true,
 }: ChatHeaderProps) {
   const { participant, messages } = conversation;
   const hasLockedMessages = messages.some((m) => isMessageCurrentlyLocked(m, currentTime));
+
+  // In receiver perspective, you are chatting with Tanvir Hossain (CURRENT_USER);
+  // in sender perspective, you are chatting with participant (Ayesha Rahman).
+  const displayUser = perspective === 'receiver' ? CURRENT_USER : participant;
 
   return (
     <header className="flex h-16 items-center justify-between border-b border-slate-900 bg-[#000000] px-4 text-white">
@@ -47,11 +54,11 @@ export default function ChatHeader({
         {/* Profile Avatar */}
         <div className="relative">
           <img
-            src={participant.avatar}
-            alt={participant.name}
+            src={displayUser.avatar}
+            alt={displayUser.name}
             className="h-10 w-10 rounded-full object-cover"
           />
-          {participant.isOnline && (
+          {displayUser.isOnline && (
             <span
               className="absolute bottom-0 right-0 h-3 w-3 rounded-full border-2 border-black bg-emerald-500"
               title="Online"
@@ -62,10 +69,10 @@ export default function ChatHeader({
         {/* Name & Active Status */}
         <div>
           <h2 className="text-sm font-bold text-white leading-tight">
-            {participant.name}
+            {displayUser.name}
           </h2>
           <p className="text-xs text-slate-400">
-            {participant.isOnline ? 'Active now' : participant.lastActive || 'Offline'}
+            {displayUser.isOnline ? 'Active now' : displayUser.lastActive || 'Offline'}
           </p>
         </div>
       </div>
@@ -73,19 +80,21 @@ export default function ChatHeader({
       {/* Center Controls: Perspective Switcher & Demo Unlock */}
       <div className="hidden sm:flex items-center gap-2">
         {/* Perspective Toggle (Sender vs Receiver simulation) */}
-        <button
-          type="button"
-          onClick={onTogglePerspective}
-          className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold border transition ${
-            perspective === 'receiver'
-              ? 'bg-amber-950/90 text-amber-300 border-amber-600 shadow-sm'
-              : 'bg-slate-900 text-slate-300 border-slate-700 hover:border-slate-500'
-          }`}
-          title="Switch view to test how the receiver sees locked messages and countdowns"
-        >
-          <span>{perspective === 'receiver' ? '👤 Viewing as Recipient' : '👁️ Viewing as Sender'}</span>
-          <span className="text-[10px] text-slate-400">(Switch ⇄)</span>
-        </button>
+        {showPerspectiveToggle && onTogglePerspective && (
+          <button
+            type="button"
+            onClick={onTogglePerspective}
+            className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold border transition ${
+              perspective === 'receiver'
+                ? 'bg-amber-950/90 text-amber-300 border-amber-600 shadow-sm'
+                : 'bg-slate-900 text-slate-300 border-slate-700 hover:border-slate-500'
+            }`}
+            title="Switch view to test how the receiver sees locked messages and countdowns"
+          >
+            <span>{perspective === 'receiver' ? '👤 Viewing as Recipient' : '👁️ Viewing as Sender'}</span>
+            <span className="text-[10px] text-slate-400">(Switch ⇄)</span>
+          </button>
+        )}
 
         {/* Fast Unlock Demo Button */}
         {hasLockedMessages && onUnlockNow && (

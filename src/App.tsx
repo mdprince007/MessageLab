@@ -142,7 +142,7 @@ export default function App() {
                   onTogglePerspective={togglePerspective}
                   onUnlockNow={unlockAllLockedNow}
                   onToggleDetails={toggleDetails}
-                  onSendMessage={sendMessage}
+                  onSendMessage={(text, opts) => sendMessage(text, { ...opts, senderId: 'me' })}
                   onReact={toggleReaction}
                   onDelete={deleteMessage}
                   onToggleGift={toggleGiftOpened}
@@ -151,6 +151,7 @@ export default function App() {
                   onChangeEmoji={changeCustomEmoji}
                   onStartCall={startCall}
                   onBack={() => setMobileView('list')}
+                  showPerspectiveToggle={false}
                 />
               </div>
 
@@ -172,7 +173,9 @@ export default function App() {
                   onTogglePerspective={togglePerspective}
                   onUnlockNow={unlockAllLockedNow}
                   onToggleDetails={toggleDetails}
-                  onSendMessage={sendMessage}
+                  onSendMessage={(text, opts) =>
+                    sendMessage(text, { ...opts, senderId: activeConversation.participant.id })
+                  }
                   onReact={toggleReaction}
                   onDelete={deleteMessage}
                   onToggleGift={toggleGiftOpened}
@@ -181,6 +184,7 @@ export default function App() {
                   onChangeEmoji={changeCustomEmoji}
                   onStartCall={startCall}
                   onBack={() => setMobileView('list')}
+                  showPerspectiveToggle={false}
                 />
               </div>
             </div>

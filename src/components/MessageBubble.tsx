@@ -7,6 +7,7 @@ import {
   formatLockCountdown,
   formatUnlockDate,
 } from '../types/messenger';
+import { CURRENT_USER } from '../data/mockData';
 import LockedDetailModal from './LockedDetailModal';
 
 interface MessageBubbleProps {
@@ -41,17 +42,24 @@ export default function MessageBubble({
   const [localGiftOpened, setLocalGiftOpened] = useState(false);
   const [showLockedModal, setShowLockedModal] = useState(false);
 
-  const isMe = message.senderId === 'me';
+  // Determine if the current viewer sent this message
+  const isOutgoing = perspective === 'sender'
+    ? message.senderId === 'me'
+    : message.senderId !== 'me';
+
+  // Determine if the current viewer is the author of a time-locked message
+  const viewerIsAuthorOfLockedMsg = isOutgoing;
+
+  // The partner's avatar and name to display when an incoming message is received
+  const incomingAvatar = perspective === 'sender' ? participant.avatar : CURRENT_USER.avatar;
+  const incomingName = perspective === 'sender' ? participant.name : CURRENT_USER.name;
+
   const isGiftOpened = message.isGiftOpened || localGiftOpened;
 
   // Check if message is currently time-locked
   const isLocked = isMessageCurrentlyLocked(message, currentTime);
   const remaining = message.unlockAt ? formatLockCountdown(message.unlockAt, currentTime) : '';
   const formattedUnlock = message.unlockAt ? formatUnlockDate(message.unlockAt) : '';
-
-  // Determine whether this bubble should behave as Receiver perspective
-  // (If perspective is switched to 'receiver', or if the message was received from contact)
-  const isViewingAsReceiver = perspective === 'receiver' || (!isMe && perspective === 'sender');
 
   // Group reactions by emoji
   const reactionCounts = message.reactions.reduce<Record<string, number>>((acc, r) => {
@@ -62,14 +70,14 @@ export default function MessageBubble({
   const hasReactions = message.reactions.length > 0;
 
   // 1. LOCKED MESSAGE IN RECEIVER VIEW (Strict Privacy: Content is never rendered!)
-  if (message.isLocked && isLocked && isViewingAsReceiver) {
+  if (message.isLocked && isLocked && !viewerIsAuthorOfLockedMsg) {
     return (
       <>
         <div className="flex w-full items-end gap-2 my-2 justify-start group">
           {isLastInGroup ? (
             <img
-              src={participant.avatar}
-              alt={participant.name}
+              src={incomingAvatar}
+              alt={incomingName}
               className="h-7 w-7 rounded-full object-cover mb-1 flex-shrink-0"
             />
           ) : (
@@ -134,7 +142,7 @@ export default function MessageBubble({
     return (
       <div
         className={`flex w-full items-end gap-2 group my-2 ${
-          isMe ? 'justify-end' : 'justify-start'
+          isOutgoing ? 'justify-end' : 'justify-start'
         }`}
         onMouseEnter={() => setShowToolbar(true)}
         onMouseLeave={() => {
@@ -142,14 +150,14 @@ export default function MessageBubble({
           setShowReactionPicker(false);
         }}
       >
-        {!isMe && isLastInGroup ? (
+        {!isOutgoing && isLastInGroup ? (
           <img
-            src={participant.avatar}
-            alt={participant.name}
+            src={incomingAvatar}
+            alt={incomingName}
             className="h-7 w-7 rounded-full object-cover mb-1 flex-shrink-0"
           />
         ) : (
-          !isMe && <div className="w-7 flex-shrink-0" />
+          !isOutgoing && <div className="w-7 flex-shrink-0" />
         )}
 
         <div className="relative flex flex-col items-center max-w-[180px] group-hover:scale-105 transition duration-200">
@@ -167,18 +175,18 @@ export default function MessageBubble({
           {showToolbar && (
             <div
               className={`absolute top-1/2 -translate-y-1/2 flex items-center gap-1 z-20 ${
-                isMe ? '-left-20' : '-right-20'
+                isOutgoing ? '-left-20' : '-right-20'
               }`}
             >
               <button
                 type="button"
                 onClick={() => setShowReactionPicker(!showReactionPicker)}
-                className="h-7 w-7 rounded-full bg-slate-800 shadow-md border border-slate-700 text-sm flex items-center justify-center hover:scale-110 transition"
+                className="h-7 w-7 rounded-full bg-slate-800 shadow-md border border-slate-700 text-sm flex items-center justify-center hover:scale-110 transition text-white"
                 title="React"
               >
                 😊
               </button>
-              {isMe && (
+              {isOutgoing && (
                 <button
                   type="button"
                   onClick={() => onDelete(message.id)}
@@ -200,7 +208,7 @@ export default function MessageBubble({
     return (
       <div
         className={`flex w-full items-end gap-2 group my-1 ${
-          isMe ? 'justify-end' : 'justify-start'
+          isOutgoing ? 'justify-end' : 'justify-start'
         }`}
         onMouseEnter={() => setShowToolbar(true)}
         onMouseLeave={() => {
@@ -208,14 +216,14 @@ export default function MessageBubble({
           setShowReactionPicker(false);
         }}
       >
-        {!isMe && isLastInGroup ? (
+        {!isOutgoing && isLastInGroup ? (
           <img
-            src={participant.avatar}
-            alt={participant.name}
+            src={incomingAvatar}
+            alt={incomingName}
             className="h-7 w-7 rounded-full object-cover mb-1 flex-shrink-0"
           />
         ) : (
-          !isMe && <div className="w-7 flex-shrink-0" />
+          !isOutgoing && <div className="w-7 flex-shrink-0" />
         )}
 
         <div className="relative">
@@ -226,7 +234,7 @@ export default function MessageBubble({
           {showToolbar && (
             <div
               className={`absolute top-1/2 -translate-y-1/2 flex items-center gap-1 z-20 ${
-                isMe ? '-left-20' : '-right-20'
+                isOutgoing ? '-left-20' : '-right-20'
               }`}
             >
               <button
@@ -237,7 +245,7 @@ export default function MessageBubble({
               >
                 😊
               </button>
-              {isMe && (
+              {isOutgoing && (
                 <button
                   type="button"
                   onClick={() => onDelete(message.id)}
@@ -257,7 +265,16 @@ export default function MessageBubble({
   // 4. GIFT BOX EFFECT
   if (message.effect === 'gift' && !isGiftOpened) {
     return (
-      <div className={`flex w-full items-end gap-2 my-1 ${isMe ? 'justify-end' : 'justify-start'}`}>
+      <div className={`flex w-full items-end gap-2 my-1 ${isOutgoing ? 'justify-end' : 'justify-start'}`}>
+        {!isOutgoing && isLastInGroup ? (
+          <img
+            src={incomingAvatar}
+            alt={incomingName}
+            className="h-7 w-7 rounded-full object-cover mb-1 flex-shrink-0"
+          />
+        ) : (
+          !isOutgoing && <div className="w-7 flex-shrink-0" />
+        )}
         <button
           type="button"
           onClick={() => {
@@ -277,25 +294,25 @@ export default function MessageBubble({
     );
   }
 
-  // 5. REGULAR BUBBLE (WITH SPECIAL SENDER TIME-LOCK BADGE IF LOCKED)
+  // 5. REGULAR BUBBLE (WITH SPECIAL SENDER TIME-LOCK BADGE IF AUTHOR)
   return (
     <div
-      className={`flex flex-col ${isMe ? 'items-end' : 'items-start'} my-0.5 group`}
+      className={`flex flex-col ${isOutgoing ? 'items-end' : 'items-start'} my-0.5 group`}
       onMouseEnter={() => setShowToolbar(true)}
       onMouseLeave={() => {
         setShowToolbar(false);
         setShowReactionPicker(false);
       }}
     >
-      <div className={`flex w-full items-end gap-2 ${isMe ? 'justify-end' : 'justify-start'}`}>
-        {!isMe && isLastInGroup ? (
+      <div className={`flex w-full items-end gap-2 ${isOutgoing ? 'justify-end' : 'justify-start'}`}>
+        {!isOutgoing && isLastInGroup ? (
           <img
-            src={participant.avatar}
-            alt={participant.name}
+            src={incomingAvatar}
+            alt={incomingName}
             className="h-7 w-7 rounded-full object-cover mb-1 flex-shrink-0"
           />
         ) : (
-          !isMe && <div className="w-7 flex-shrink-0" />
+          !isOutgoing && <div className="w-7 flex-shrink-0" />
         )}
 
         <div className="relative max-w-[75%] sm:max-w-[65%]">
@@ -321,7 +338,7 @@ export default function MessageBubble({
           {showToolbar && (
             <div
               className={`absolute top-1/2 -translate-y-1/2 flex items-center gap-1 z-30 ${
-                isMe ? '-left-24' : '-right-24'
+                isOutgoing ? '-left-24' : '-right-24'
               }`}
             >
               <button
@@ -339,7 +356,7 @@ export default function MessageBubble({
               >
                 ↩
               </button>
-              {isMe && (
+              {isOutgoing && (
                 <button
                   type="button"
                   onClick={() => onDelete(message.id)}
@@ -356,7 +373,7 @@ export default function MessageBubble({
           {showReactionPicker && (
             <div
               className={`absolute -top-10 z-40 flex items-center gap-1.5 rounded-full bg-slate-900 px-2.5 py-1 shadow-xl border border-slate-700 animate-in zoom-in-95 duration-100 ${
-                isMe ? 'right-0' : 'left-0'
+                isOutgoing ? 'right-0' : 'left-0'
               }`}
             >
               {QUICK_REACTIONS.map((emoji) => (
@@ -378,7 +395,7 @@ export default function MessageBubble({
           {/* Message Bubble Content */}
           <div
             className={`relative rounded-2xl px-3.5 py-2 text-sm leading-relaxed whitespace-pre-wrap break-words ${
-              message.isLocked
+              message.isLocked && isLocked
                 ? 'bg-gradient-to-r from-amber-600 via-amber-700 to-amber-800 text-white ring-1 ring-amber-400/40 shadow-md'
                 : message.effect === 'fire'
                 ? 'bg-gradient-to-r from-red-600 to-amber-500 text-white ring-2 ring-orange-400 shadow-lg shadow-orange-500/30'
@@ -386,7 +403,7 @@ export default function MessageBubble({
                 ? 'bg-gradient-to-r from-rose-500 to-pink-500 text-white shadow-md shadow-pink-500/20'
                 : message.effect === 'gift'
                 ? 'bg-gradient-to-r from-amber-600 to-rose-600 text-white ring-2 ring-amber-300'
-                : isMe
+                : isOutgoing
                 ? `${theme.outgoingClass} rounded-br-xs shadow-xs`
                 : 'bg-[#262626] text-slate-100 rounded-bl-xs'
             }`}
@@ -395,7 +412,7 @@ export default function MessageBubble({
 
             <span
               className={`opacity-0 group-hover:opacity-100 transition text-[10px] ml-2 select-none ${
-                isMe ? 'text-white/70' : 'text-slate-400'
+                isOutgoing ? 'text-white/70' : 'text-slate-400'
               }`}
             >
               {message.timestamp}
@@ -406,7 +423,7 @@ export default function MessageBubble({
           {hasReactions && (
             <div
               className={`absolute -bottom-2 flex items-center gap-0.5 rounded-full bg-slate-900 px-1.5 py-0.5 shadow-md border border-slate-700 text-xs cursor-pointer hover:scale-105 transition z-10 ${
-                isMe ? 'right-2' : 'left-2'
+                isOutgoing ? 'right-2' : 'left-2'
               }`}
               onClick={() => onReact(message.id, '❤️')}
               title="Reactions"
@@ -425,9 +442,9 @@ export default function MessageBubble({
           )}
         </div>
 
-        {isMe && isLastInGroup && message.status === 'seen' && (
+        {isOutgoing && isLastInGroup && message.status === 'seen' && (
           <img
-            src={participant.avatar}
+            src={incomingAvatar}
             alt="Seen"
             className="h-3.5 w-3.5 rounded-full object-cover mb-1 flex-shrink-0"
             title={`Seen at ${message.timestamp}`}
@@ -436,7 +453,7 @@ export default function MessageBubble({
       </div>
 
       {/* SENDER'S TIME-LOCK BADGE (Visible to Sender) */}
-      {message.isLocked && isMe && (
+      {message.isLocked && viewerIsAuthorOfLockedMsg && (
         <div className="mt-1 flex items-center gap-2 rounded-lg bg-amber-950/80 px-2.5 py-1 text-[11px] border border-amber-800/60 max-w-sm">
           {isLocked ? (
             <>

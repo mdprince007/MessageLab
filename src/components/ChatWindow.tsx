@@ -12,7 +12,7 @@ interface ChatWindowProps {
   isDetailsOpen: boolean;
   perspective: 'sender' | 'receiver';
   currentTime: Date;
-  onTogglePerspective: () => void;
+  onTogglePerspective?: () => void;
   onUnlockNow?: () => void;
   onToggleDetails: () => void;
   onSendMessage: (
@@ -25,6 +25,7 @@ interface ChatWindowProps {
       isLocked?: boolean;
       unlockAt?: string;
       showTimerToReceiver?: boolean;
+      senderId?: string;
     }
   ) => void;
   onReact: (messageId: string, emoji: string) => void;
@@ -35,6 +36,7 @@ interface ChatWindowProps {
   onChangeEmoji: (emoji: string) => void;
   onStartCall: (type: 'audio' | 'video') => void;
   onBack?: () => void;
+  showPerspectiveToggle?: boolean;
 }
 
 export default function ChatWindow({
@@ -55,6 +57,7 @@ export default function ChatWindow({
   onChangeEmoji,
   onStartCall,
   onBack,
+  showPerspectiveToggle = true,
 }: ChatWindowProps) {
   const [showThemeModal, setShowThemeModal] = useState(false);
 
@@ -73,6 +76,7 @@ export default function ChatWindow({
           onStartCall={onStartCall}
           onToggleDetails={onToggleDetails}
           isDetailsOpen={isDetailsOpen}
+          showPerspectiveToggle={showPerspectiveToggle}
         />
 
         {/* Message Area */}
